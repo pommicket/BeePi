@@ -1,8 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int msPer;
+int speakerMode;
+
+
+void speakerNote(int freq)
+{
+    int i;
+    int samples = 8*msPer;
+    for (i = 0; i < samples; i++)
+    {
+	putchar((i*freq)%256);
+    }
+}
 
 int playNote(char i)
 {
@@ -43,11 +56,19 @@ int playNote(char i)
 	return 0;
 	break;
     }
-
-    char* command = malloc(256);
-    sprintf(command, "beep -f %d -l %d", freq, msPer);
-    int retval = system(command);
-    free(command);
+    int retval;
+    if (!speakerMode)
+    {
+	char* command = malloc(256);
+	sprintf(command, "beep -f %d -l %d", freq, msPer);
+	retval = system(command);
+	free(command);
+    }
+    else
+    {
+	speakerNote(freq);
+	retval = 0;
+    }
     return retval;
 }
 
@@ -64,16 +85,37 @@ int eq(char* b1, char* b2)
 
 int main(int argc, char** argv)
 {
+    int i;
+    speakerMode = 0;
+    int speakerModeIndex = 0;
+    for (i = 0; i < argc; i++)
+    {
+	if (eq(argv[i], "--speaker"))
+	{
+	    speakerMode = 1;
+	    speakerModeIndex = i;
+	}
+    }
+    
     msPer = 200;
-    if (argc > 1)
+    if (argc > (1+speakerMode))
     {
 	if (eq(argv[1], "--help"))
 	{
 	    printf("Usage: beepi <length per note in ms>\n");
 	    return 0;
 	}
-	msPer = atoi(argv[1]);
-    }	
+
+	if ((!speakerMode) || speakerModeIndex == 2) 
+	    msPer = atoi(argv[1]);
+	else if (speakerModeIndex == 1)
+	    msPer = atoi(argv[2]);
+	
+    }
+    
+    
+    
+    
     FILE* fp;
     fp = fopen("pi.txt", "r");
     int sz;
@@ -83,7 +125,7 @@ int main(int argc, char** argv)
     char* buffer = malloc(100000);
     fread(buffer, sz, 1, fp);
     fclose(fp);
-    int i;
+
     for (i = 0; i < strlen(buffer); i++)
 	if (playNote(buffer[i]))
 	    return 0;
