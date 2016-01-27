@@ -13,7 +13,7 @@ void speakerNote(int freq)
     int samples = 8*msPer;
     for (i = 0; i < samples; i++)
     {
-	putchar((i*freq)%256);
+	putchar((int)(256*sin(freq*i)));
     }
 }
 
